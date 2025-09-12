@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alloy Nominal Values Calculator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1e1e1e;
+            color: #ffffff;
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #2d2d30;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #007acc;
+            margin-bottom: 30px;
+            font-size: 2.2em;
+        }
+
+        .step-title {
+            font-size: 1.4em;
+            color: #007acc;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #007acc;
+        }
+
+        .step {
+            display: none;
+            margin-bottom: 30px;
+        }
+
+        .step.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        select, input[type="number"], input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            background-color: #3c3c3c;
+            border: 1px solid #555;
+            border-radius: 4px;
+            color: #ffffff;
+            font-size: 14px;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: #007acc;
+            box-shadow: 0 0 5px rgba(0, 122, 204, 0.3);
+        }
+
+        .selected-values {
+            background-color: #3c3c3c;
+            padding: 20px;
+            border-radius: 6px;
+            margin-top: 20px;
+            border: 1px solid #555;
+        }
+
+        .element-input {
+            display: grid;
+            grid-template-columns: 120px 1fr 100px;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #3c3c3c;
+            border-radius: 4px;
+        }
+
+        .element-label {
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .nominal-value {
+            font-size: 12px;
+            color: #cccccc;
+        }
+
+        .buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+            gap: 15px;
+        }
+
+        button {
+            padding: 12px 24px;
+            background-color: #007acc;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background-color 0.3s;
+        }
+
+        button:hover:not(:disabled) {
+            background-color: #005a9e;
+        }
+
+        button:disabled {
+            background-color: #555;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .clear-btn {
+            background-color: #dc3545;
+        }
+
+        .clear-btn:hover {
+            background-color: #c82333;
+        }
+
+        .results-summary {
+            background-color: #3c3c3c;
+            padding: 20px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border: 1px solid #555;
+        }
+
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .results-table th,
+        .results-table td {
+            padding: 10px;
+            text-align: center;
+            border-bottom: 1px solid #555;
+        }
+
+        .results-table th {
+            background-color: #2d2d30;
+            color: #007acc;
+            font-weight: 600;
+        }
+
+        .final-results {
+            margin-top: 20px;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin-bottom: 8px;
+            background-color: #3c3c3c;
+            border-radius: 4px;
+        }
+
+        .result-value {
+            color: #007acc;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .error {
+            color: #dc3545;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .success {
+            color: #28a745;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Alloy Nominal Values Calculator</h1>
+
+        <!-- Step 1: Selection -->
+        <div id="step1" class="step active">
+            <div class="step-title">Step 1: Select Alloy Group and Code</div>
+            
+            <div class="form-group">
+                <label for="alloyGroup">Alloy Group:</label>
+                <select id="alloyGroup" onchange="updateAlloyCode()">
+                    <option value="">Select Alloy Group</option>
+                    <option value="6063">6063</option>
+                    <option value="6005A">6005A</option>
+                    <option value="6061">6061</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="alloyCode">Alloy Code:</label>
+                <select id="alloyCode" disabled onchange="updateSelectedValues()">
+                    <option value="">Select Alloy Code</option>
+                </select>
+            </div>
+
+            <div class="selected-values">
+                <h3>Selected Values:</h3>
+                <p id="selectedGroup">Alloy Group: Not selected</p>
+                <p id="selectedCode">Alloy Code: Not selected</p>
+                <button class="clear-btn" onclick="clearAllInputs()">Clear All Inputs</button>
+            </div>
+        </div>
+
+        <!-- Step 2: Furnace Analysis -->
+        <div id="step2" class="step">
+            <div class="step-title">Step 2: Enter Furnace Analysis</div>
+            <p style="margin-bottom: 20px; color: #cccccc;">Enter furnace analysis values for each element (optional):</p>
+            <div id="furnaceInputs"></div>
+        </div>
+
+        <!-- Step 3: Weight -->
+        <div id="step3" class="step">
+            <div class="step-title">Step 3: Enter Total Weight</div>
+            <div class="form-group">
+                <label for="totalWeight">Total Weight (pounds):</label>
+                <input type="number" id="totalWeight" step="0.01" placeholder="Enter weight in pounds">
+            </div>
+        </div>
+
+        <!-- Step 4: Recovery -->
+        <div id="step4" class="step">
+            <div class="step-title">Step 4: Enter Recovery Percentages</div>
+            <p style="margin-bottom: 20px; color: #cccccc;">Enter recovery percentages for each element (optional):</p>
+            <div id="recoveryInputs"></div>
+        </div>
+
+        <!-- Step 5: Results -->
+        <div id="step5" class="step">
+            <div class="step-title">Step 5: Results</div>
+            <div id="resultsContainer"></div>
+        </div>
+
+        <!-- Navigation Buttons -->
+        <div class="buttons">
+            <button id="prevBtn" onclick="previousStep()" disabled>Previous</button>
+            <button id="nextBtn" onclick="nextStep()">Next</button>
+        </div>
+    </div>
+
+    <script>
+        // Data structures
+        const alloyData = {
+            "6063": ["765047", "765046"],
+            "6005A": ["765342"],
+            "6061": ["769236"]
+        };
+
+        const nominalValues = {
+            "6063": { "Silicon": 0.45, "Iron": 0.19, "Copper": 0.04, "Manganese": 0.04, "Magnesium": 0.49, "Chromium": 0.0 },
+            "6005A": { "Silicon": 0.70, "Iron": 0.22, "Copper": 0.10, "Manganese": 0.04, "Magnesium": 0.50, "Chromium": 0.0 },
+            "6061": { "Silicon": 0.65, "Iron": 0.21, "Copper": 0.19, "Manganese": 0.06, "Magnesium": 0.85, "Chromium": 0.06 }
+        };
+
+        const elements = ["Silicon", "Iron", "Copper", "Manganese", "Magnesium", "Chromium"];
+        
+        let currentStep = 1;
+        let selectedAlloyGroup = "";
+        let selectedAlloyCode = "";
+        let furnaceAnalysis = {};
+        let totalWeight = 0;
+        let recoveryPercentages = {};
+
+        // Initialize the application
+        function init() {
+            updateNavigationButtons();
+        }
+
+        function updateAlloyCode() {
+            const alloyGroup = document.getElementById('alloyGroup').value;
+            const alloyCodeSelect = document.getElementById('alloyCode');
+            
+            alloyCodeSelect.innerHTML = '<option value="">Select Alloy Code</option>';
+            alloyCodeSelect.disabled = !alloyGroup;
+            
+            if (alloyGroup && alloyData[alloyGroup]) {
+                alloyData[alloyGroup].forEach(code => {
+                    const option = document.createElement('option');
+                    option.value = code;
+                    option.textContent = code;
+                    alloyCodeSelect.appendChild(option);
+                });
+            }
+            
+            selectedAlloyGroup = alloyGroup;
+            updateSelectedValues();
+        }
+
+        function updateSelectedValues() {
+            const alloyGroup = document.getElementById('alloyGroup').value;
+            const alloyCode = document.getElementById('alloyCode').value;
+            
+            selectedAlloyGroup = alloyGroup;
+            selectedAlloyCode = alloyCode;
+            
+            document.getElementById('selectedGroup').textContent = `Alloy Group: ${alloyGroup || 'Not selected'}`;
+            document.getElementById('selectedCode').textContent = `Alloy Code: ${alloyCode || 'Not selected'}`;
+            
+            updateNavigationButtons();
+        }
+
+        function createFurnaceInputs() {
+            const container = document.getElementById('furnaceInputs');
+            container.innerHTML = '';
+            
+            elements.forEach(element => {
+                const div = document.createElement('div');
+                div.className = 'element-input';
+                
+                const nominal = selectedAlloyGroup && nominalValues[selectedAlloyGroup] ? 
+                    nominalValues[selectedAlloyGroup][element] : 0;
+                
+                div.innerHTML = `
+                    <div class="element-label">${element}:</div>
+                    <input type="number" id="furnace_${element}" step="0.001" placeholder="Enter value" 
+                           value="${furnaceAnalysis[element] || ''}">
+                    <div class="nominal-value">Nominal: ${nominal.toFixed(3)}</div>
+                `;
+                
+                container.appendChild(div);
+            });
+        }
+
+        function createRecoveryInputs() {
+            const container = document.getElementById('recoveryInputs');
+            container.innerHTML = '';
+            
+            elements.forEach(element => {
+                const div = document.createElement('div');
+                div.className = 'element-input';
+                
+                const difference = calculateDifference(element);
+                
+                div.innerHTML = `
+                    <div class="element-label">${element}:</div>
+                    <input type="number" id="recovery_${element}" step="0.1" placeholder="Enter percentage" 
+                           value="${recoveryPercentages[element] || ''}">
+                    <div class="nominal-value">Diff: ${difference.toFixed(4)}</div>
+                `;
+                
+                container.appendChild(div);
+            });
+        }
+
+        function calculateDifference(element) {
+            if (!furnaceAnalysis[element] || !selectedAlloyGroup || !nominalValues[selectedAlloyGroup]) {
+                return 0;
+            }
+            
+            const furnaceValue = parseFloat(furnaceAnalysis[element]);
+            const nominalValue = nominalValues[selectedAlloyGroup][element];
+            return Math.abs(furnaceValue - nominalValue);
+        }
+
+        function validateFurnaceAnalysis() {
+            furnaceAnalysis = {};
+            
+            elements.forEach(element => {
+                const input = document.getElementById(`furnace_${element}`);
+                if (input && input.value.trim() !== '') {
+                    const value = parseFloat(input.value);
+                    if (!isNaN(value)) {
+                        furnaceAnalysis[element] = value;
+                    }
+                }
+            });
+            
+            return true;
+        }
+
+        function validateWeight() {
+            const weightInput = document.getElementById('totalWeight');
+            const weight = parseFloat(weightInput.value);
+            
+            if (weightInput.value.trim() !== '' && (!isNaN(weight) && weight > 0)) {
+                totalWeight = weight;
+                return true;
+            } else if (weightInput.value.trim() === '') {
+                totalWeight = 0;
+                return true;
+            }
+            
+            alert('Please enter a valid weight in pounds');
+            return false;
+        }
+
+        function validateRecovery() {
+            recoveryPercentages = {};
+            
+            elements.forEach(element => {
+                const input = document.getElementById(`recovery_${element}`);
+                if (input && input.value.trim() !== '') {
+                    const value = parseFloat(input.value);
+                    if (!isNaN(value) && value > 0) {
+                        recoveryPercentages[element] = value;
+                    }
+                }
+            });
+            
+            return true;
+        }
+
+        function calculateResults() {
+            const results = {};
+            
+            elements.forEach(element => {
+                if (furnaceAnalysis[element] && recoveryPercentages[element]) {
+                    const difference = calculateDifference(element);
+                    const weight = totalWeight || 0;
+                    const recovery = recoveryPercentages[element];
+                    
+                    if (recovery !== 0) {
+                        const result = ((difference * weight) / 100) * 100 / recovery;
+                        results[element] = result;
+                    }
+                }
+            });
+            
+            return results;
+        }
+
+        function displayResults() {
+            const container = document.getElementById('resultsContainer');
+            const results = calculateResults();
+            
+            let html = `
+                <div class="results-summary">
+                    <h3>Input Summary</h3>
+                    <p><strong>Alloy Group:</strong> ${selectedAlloyGroup} | <strong>Code:</strong> ${selectedAlloyCode} | <strong>Weight:</strong> ${totalWeight} lbs</p>
+                    
+                    <h4 style="margin-top: 15px;">Furnace Analysis:</h4>
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th>Element</th>
+                                <th>Furnace Analysis</th>
+                                <th>Recovery%</th>
+                                <th>Difference</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            elements.forEach(element => {
+                if (furnaceAnalysis[element]) {
+                    const recovery = recoveryPercentages[element] || '';
+                    const difference = calculateDifference(element);
+                    
+                    html += `
+                        <tr>
+                            <td>${element}</td>
+                            <td>${furnaceAnalysis[element].toFixed(3)}</td>
+                            <td>${recovery ? recovery.toFixed(1) + '%' : ''}</td>
+                            <td>${difference.toFixed(4)}</td>
+                        </tr>
+                    `;
+                }
+            });
+            
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="final-results">
+                    <h3>Required Element Weight (LBS):</h3>
+            `;
+            
+            if (Object.keys(results).length > 0) {
+                Object.entries(results).forEach(([element, value]) => {
+                    html += `
+                        <div class="result-item">
+                            <span>${element}:</span>
+                            <span class="result-value">${Math.round(value)}</span>
+                        </div>
+                    `;
+                });
+            } else {
+                html += '<p style="color: #cccccc;">No results to display. Please enter furnace analysis and recovery percentages.</p>';
+            }
+            
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function nextStep() {
+            if (currentStep === 1) {
+                if (!selectedAlloyGroup || !selectedAlloyCode) {
+                    alert('Please select both alloy group and code');
+                    return;
+                }
+                createFurnaceInputs();
+            } else if (currentStep === 2) {
+                if (!validateFurnaceAnalysis()) return;
+            } else if (currentStep === 3) {
+                if (!validateWeight()) return;
+                createRecoveryInputs();
+            } else if (currentStep === 4) {
+                if (!validateRecovery()) return;
+                displayResults();
+            }
+            
+            if (currentStep < 5) {
+                document.getElementById(`step${currentStep}`).classList.remove('active');
+                currentStep++;
+                document.getElementById(`step${currentStep}`).classList.add('active');
+                updateNavigationButtons();
+            }
+        }
+
+        function previousStep() {
+            if (currentStep > 1) {
+                document.getElementById(`step${currentStep}`).classList.remove('active');
+                currentStep--;
+                document.getElementById(`step${currentStep}`).classList.add('active');
+                updateNavigationButtons();
+                
+                // Preserve values when going back
+                if (currentStep === 3) {
+                    const weightInput = document.getElementById('totalWeight');
+                    if (totalWeight > 0) {
+                        weightInput.value = totalWeight.toFixed(2);
+                    }
+                }
+            }
+        }
+
+        function updateNavigationButtons() {
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            
+            prevBtn.disabled = currentStep === 1;
+            
+            if (currentStep === 1) {
+                nextBtn.disabled = !selectedAlloyGroup || !selectedAlloyCode;
+            } else if (currentStep === 5) {
+                nextBtn.style.display = 'none';
+            } else {
+                nextBtn.disabled = false;
+                nextBtn.style.display = 'block';
+            }
+        }
+
+        function clearAllInputs() {
+            // Reset all data
+            selectedAlloyGroup = "";
+            selectedAlloyCode = "";
+            furnaceAnalysis = {};
+            totalWeight = 0;
+            recoveryPercentages = {};
+            
+            // Reset form elements
+            document.getElementById('alloyGroup').value = '';
+            document.getElementById('alloyCode').value = '';
+            document.getElementById('alloyCode').disabled = true;
+            document.getElementById('totalWeight').value = '';
+            
+            // Reset display
+            document.getElementById('selectedGroup').textContent = 'Alloy Group: Not selected';
+            document.getElementById('selectedCode').textContent = 'Alloy Code: Not selected';
+            
+            // Go back to step 1
+            document.getElementById(`step${currentStep}`).classList.remove('active');
+            currentStep = 1;
+            document.getElementById('step1').classList.add('active');
+            updateNavigationButtons();
+            
+            alert('All inputs have been cleared.');
+        }
+
+        // Initialize the application
+        init();
+    </script>
+</body>
+</html>
