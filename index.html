@@ -283,9 +283,10 @@
         };
 
         const nominalValues = {
-            "6063": { "Silicon": 0.45, "Iron": 0.19, "Copper": 0.0, "Manganese": 0.04, "Magnesium": 0.49, "Chromium": 0.0 },
-            "6005A": { "Silicon": 0.70, "Iron": 0.22, "Copper": 0.10, "Manganese": 0.24, "Magnesium": 0.50, "Chromium": 0.0 },
-            "6061": { "Silicon": 0.65, "Iron": 0.21, "Copper": 0.19, "Manganese": 0.08, "Magnesium": 0.85, "Chromium": 0.06 }
+            "765047": { "Silicon": 0.45, "Iron": 0.19, "Copper": 0.0, "Manganese": 0.04, "Magnesium": 0.49, "Chromium": 0.0 },
+            "765046": { "Silicon": 0.45, "Iron": 0.19, "Copper": 0.0, "Manganese": 0.04, "Magnesium": 0.50, "Chromium": 0.0 },
+            "765342": { "Silicon": 0.70, "Iron": 0.22, "Copper": 0.10, "Manganese": 0.24, "Magnesium": 0.50, "Chromium": 0.0 },
+            "769236": { "Silicon": 0.65, "Iron": 0.21, "Copper": 0.19, "Manganese": 0.08, "Magnesium": 0.85, "Chromium": 0.06 }
         };
 
         const elements = ["Silicon", "Iron", "Copper", "Manganese", "Magnesium", "Chromium"];
@@ -343,8 +344,8 @@
                 const div = document.createElement('div');
                 div.className = 'element-input';
                 
-                const nominal = selectedAlloyGroup && nominalValues[selectedAlloyGroup] ? 
-                    nominalValues[selectedAlloyGroup][element] : 0;
+                const nominal = selectedAlloyCode && nominalValues[selectedAlloyCode] ? 
+                    nominalValues[selectedAlloyCode][element] : 0;
                 
                 div.innerHTML = `
                     <div class="element-label">${element}:</div>
@@ -379,12 +380,12 @@
         }
 
         function calculateDifference(element) {
-            if (!furnaceAnalysis[element] || !selectedAlloyGroup || !nominalValues[selectedAlloyGroup]) {
+            if (!furnaceAnalysis[element] || !selectedAlloyCode || !nominalValues[selectedAlloyCode]) {
                 return 0;
             }
             
             const furnaceValue = parseFloat(furnaceAnalysis[element]);
-            const nominalValue = nominalValues[selectedAlloyGroup][element];
+            const nominalValue = nominalValues[selectedAlloyCode][element];
             return Math.abs(furnaceValue - nominalValue);
         }
 
