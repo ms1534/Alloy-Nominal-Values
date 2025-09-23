@@ -367,6 +367,8 @@
                 
                 if (enteredValue > nominalValue) {
                     alert('No need to add anything');
+                    input.value = ''; // Clear the input field instantly
+                    input.focus(); // Optional: keep focus on the cleared field
                     return false;
                 }
             }
