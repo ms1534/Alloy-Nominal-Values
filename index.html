@@ -350,12 +350,27 @@
                 div.innerHTML = `
                     <div class="element-label">${element}:</div>
                     <input type="number" id="furnace_${element}" step="0.001" placeholder="Enter value" 
-                           value="${furnaceAnalysis[element] || ''}">
+                           value="${furnaceAnalysis[element] || ''}" onchange="validateFurnaceInput('${element}')">
                     <div class="nominal-value">Nominal: ${nominal.toFixed(3)}</div>
                 `;
                 
                 container.appendChild(div);
             });
+        }
+
+        function validateFurnaceInput(element) {
+            const input = document.getElementById(`furnace_${element}`);
+            const enteredValue = parseFloat(input.value);
+            
+            if (!isNaN(enteredValue) && selectedAlloyCode && nominalValues[selectedAlloyCode]) {
+                const nominalValue = nominalValues[selectedAlloyCode][element];
+                
+                if (enteredValue > nominalValue) {
+                    alert('No need to add anything');
+                    return false;
+                }
+            }
+            return true;
         }
 
         function createRecoveryInputs() {
