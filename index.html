@@ -297,6 +297,7 @@
         let furnaceAnalysis = {};
         let totalWeight = 0;
         let recoveryPercentages = {};
+        let clearedElements = {}; // Track elements that were cleared for being > nominal
 
         // Initialize the application
         function init() {
@@ -369,7 +370,11 @@
                     alert('No need to add anything');
                     input.value = ''; // Clear the input field instantly
                     input.focus(); // Optional: keep focus on the cleared field
+                    clearedElements[element] = true; // Mark this element as cleared
                     return false;
+                } else {
+                    // If user enters a valid value, remove it from cleared elements
+                    delete clearedElements[element];
                 }
             }
             return true;
@@ -520,6 +525,7 @@
                     <h3>Required Element Weight (LBS):</h3>
             `;
             
+            // Show results for calculated elements
             if (Object.keys(results).length > 0) {
                 Object.entries(results).forEach(([element, value]) => {
                     html += `
@@ -529,7 +535,22 @@
                         </div>
                     `;
                 });
-            } else {
+            }
+            
+            // Show "No need to add anything" for cleared elements
+            if (Object.keys(clearedElements).length > 0) {
+                Object.keys(clearedElements).forEach(element => {
+                    html += `
+                        <div class="result-item">
+                            <span>${element}:</span>
+                            <span class="result-value" style="color: #28a745;">No need to add anything</span>
+                        </div>
+                    `;
+                });
+            }
+            
+            // Show message if no results at all
+            if (Object.keys(results).length === 0 && Object.keys(clearedElements).length === 0) {
                 html += '<p style="color: #cccccc;">No results to display. Please enter furnace analysis and recovery percentages.</p>';
             }
             
@@ -602,6 +623,7 @@
             furnaceAnalysis = {};
             totalWeight = 0;
             recoveryPercentages = {};
+            clearedElements = {}; // Reset cleared elements tracking
             
             // Reset form elements
             document.getElementById('alloyGroup').value = '';
