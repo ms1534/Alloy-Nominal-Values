@@ -525,34 +525,34 @@
                     <h3>Required Element Weight (LBS):</h3>
             `;
             
-            // Show results for calculated elements
-            if (Object.keys(results).length > 0) {
-                Object.entries(results).forEach(([element, value]) => {
+            // Show results for all elements
+            elements.forEach(element => {
+                if (results[element]) {
+                    // Element has calculated result
                     html += `
                         <div class="result-item">
                             <span>${element}:</span>
-                            <span class="result-value">${Math.round(value)}</span>
+                            <span class="result-value">${Math.round(results[element])}</span>
                         </div>
                     `;
-                });
-            }
-            
-            // Show "No need to add anything" for cleared elements
-            if (Object.keys(clearedElements).length > 0) {
-                Object.keys(clearedElements).forEach(element => {
+                } else if (clearedElements[element]) {
+                    // Element was cleared for being > nominal
                     html += `
                         <div class="result-item">
                             <span>${element}:</span>
                             <span class="result-value" style="color: #28a745;">No need to add anything</span>
                         </div>
                     `;
-                });
-            }
-            
-            // Show message if no results at all
-            if (Object.keys(results).length === 0 && Object.keys(clearedElements).length === 0) {
-                html += '<p style="color: #cccccc;">No results to display. Please enter furnace analysis and recovery percentages.</p>';
-            }
+                } else {
+                    // Element was left blank or has no recovery percentage
+                    html += `
+                        <div class="result-item">
+                            <span>${element}:</span>
+                            <span class="result-value" style="color: #cccccc;">-</span>
+                        </div>
+                    `;
+                }
+            });
             
             html += '</div>';
             container.innerHTML = html;
