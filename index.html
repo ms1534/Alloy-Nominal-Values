@@ -65,12 +65,22 @@
 
         select, input[type="number"], input[type="text"] {
             width: 100%;
-            padding: 12px;
+            padding: 15px;
             background-color: #3c3c3c;
             border: 1px solid #555;
             border-radius: 4px;
             color: #ffffff;
-            font-size: 14px;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        select option {
+            padding: 10px;
+            margin: 5px 0;
+            font-size: 18px;
+            font-weight: 600;
+            background-color: #3c3c3c;
+            color: #ffffff;
         }
 
         select:focus, input:focus {
@@ -216,7 +226,6 @@
             <div class="form-group">
                 <label for="alloyGroup">Alloy Group:</label>
                 <select id="alloyGroup" onchange="updateAlloyCode()">
-                    <option value="">Select Alloy Group</option>
                     <option value="6063">6063</option>
                     <option value="6005A">6005A</option>
                     <option value="6061">6061</option>
@@ -226,7 +235,6 @@
             <div class="form-group">
                 <label for="alloyCode">Alloy Code:</label>
                 <select id="alloyCode" disabled onchange="updateSelectedValues()">
-                    <option value="">Select Alloy Code</option>
                 </select>
             </div>
 
@@ -308,7 +316,7 @@
             const alloyGroup = document.getElementById('alloyGroup').value;
             const alloyCodeSelect = document.getElementById('alloyCode');
             
-            alloyCodeSelect.innerHTML = '<option value="">Select Alloy Code</option>';
+            alloyCodeSelect.innerHTML = '';
             alloyCodeSelect.disabled = !alloyGroup;
             
             if (alloyGroup && alloyData[alloyGroup]) {
