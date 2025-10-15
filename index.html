@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Alloy Nominal Values Calculator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -213,6 +214,15 @@
             font-size: 14px;
             margin-top: 10px;
         }
+
+        .export-btn {
+            background-color: #28a745;
+            margin-top: 20px;
+        }
+
+        .export-btn:hover {
+            background-color: #218838;
+        }
     </style>
 </head>
 <body>
@@ -242,7 +252,15 @@
                 <h3>Selected Values:</h3>
                 <p id="selectedGroup">Alloy Group: Not selected</p>
                 <p id="selectedCode">Alloy Code: Not selected</p>
-                <button class="clear-btn" onclick="clearAllInputs()">Clear All Inputs</button>
+                
+                <div style="margin-top: 15px; padding: 15px; background-color: #2d2d30; border-radius: 6px; border: 2px solid #007acc;">
+                    <h4 style="color: #007acc; margin-bottom: 10px;">📁 Base Folder Setup</h4>
+                    <p id="baseFolderStatus" style="color: #cccccc; margin-bottom: 10px;">No base folder selected</p>
+                    <button id="browseBtn" onclick="selectBaseFolder()" style="background-color: #007acc; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Browse</button>
+                    <p style="font-size: 12px; color: #888; margin-top: 8px;">⚠️ Required: Select base folder to organize Excel files</p>
+                </div>
+                
+                <button class="clear-btn" onclick="clearAllInputs()" style="margin-top: 15px;">Clear All Inputs</button>
             </div>
         </div>
 
@@ -306,10 +324,99 @@
         let totalWeight = 0;
         let recoveryPercentages = {};
         let clearedElements = {}; // Track elements that were cleared for being > nominal
+        // Store the base folder handle in multiple places to prevent loss
+        let baseFolderHandle = null;
+        let isBaseFolderSet = false;
+        
+        // Create a persistent storage for the folder handle
+        window.alloyCalculatorData = window.alloyCalculatorData || {
+            folderHandle: null,
+            isConfigured: false
+        };
 
         // Initialize the application
         function init() {
+            // Initialize with default selection (6063 is pre-selected in HTML)
+            updateAlloyCode();
+            checkBaseFolderStatus();
             updateNavigationButtons();
+        }
+
+        // Check if base folder is actually accessible (not just saved in localStorage)
+        async function checkBaseFolderStatus() {
+            const savedBaseFolderName = localStorage.getItem('alloyCalculatorBaseFolder');
+            
+            // First check if we have any active folder handles
+            const hasActiveHandle = baseFolderHandle || 
+                                  (window.alloyCalculatorData && window.alloyCalculatorData.folderHandle) || 
+                                  window.selectedBaseFolderHandle;
+            
+            if (savedBaseFolderName && hasActiveHandle) {
+                // We have both saved name AND active handle - folder is truly configured
+                isBaseFolderSet = true;
+                window.alloyCalculatorData.isConfigured = true;
+                document.getElementById('baseFolderStatus').textContent = `Base folder: ${savedBaseFolderName}`;
+                document.getElementById('baseFolderStatus').style.color = '#28a745';
+                document.getElementById('browseBtn').textContent = 'Change Folder';
+                document.getElementById('browseBtn').style.backgroundColor = '#6c757d';
+                console.log('DEBUG: Folder is truly accessible:', savedBaseFolderName);
+            } else if (savedBaseFolderName && !hasActiveHandle) {
+                // We have saved name but NO active handle - folder access was lost
+                console.log('DEBUG: Folder handle lost, requiring re-selection');
+                isBaseFolderSet = false;
+                window.alloyCalculatorData.isConfigured = false;
+                document.getElementById('baseFolderStatus').textContent = 'Folder access lost - please re-select';
+                document.getElementById('baseFolderStatus').style.color = '#dc3545';
+                document.getElementById('browseBtn').textContent = 'Browse';
+                document.getElementById('browseBtn').style.backgroundColor = '#007acc';
+            } else {
+                // No folder configured at all
+                isBaseFolderSet = false;
+                window.alloyCalculatorData.isConfigured = false;
+                document.getElementById('baseFolderStatus').textContent = 'No base folder selected';
+                document.getElementById('baseFolderStatus').style.color = '#cccccc';
+                document.getElementById('browseBtn').textContent = 'Browse';
+                document.getElementById('browseBtn').style.backgroundColor = '#007acc';
+            }
+        }
+
+        // Select base folder (one-time setup)
+        async function selectBaseFolder() {
+            try {
+                if (!window.showDirectoryPicker) {
+                    alert('Folder selection is not supported in this browser.\n\nPlease use Chrome, Edge, or another Chromium-based browser.');
+                    return;
+                }
+
+                const directoryHandle = await window.showDirectoryPicker();
+                
+                // Store in multiple locations to prevent loss
+                baseFolderHandle = directoryHandle;
+                isBaseFolderSet = true;
+                window.alloyCalculatorData.folderHandle = directoryHandle;
+                window.alloyCalculatorData.isConfigured = true;
+                window.selectedBaseFolderHandle = directoryHandle;
+                
+                // Save to localStorage for persistence across sessions
+                localStorage.setItem('alloyCalculatorBaseFolder', directoryHandle.name);
+                localStorage.setItem('alloyCalculatorBaseFolderConfigured', 'true');
+                
+                // Update UI
+                document.getElementById('baseFolderStatus').textContent = `Base folder: ${directoryHandle.name}`;
+                document.getElementById('baseFolderStatus').style.color = '#28a745';
+                document.getElementById('browseBtn').textContent = 'Change Folder';
+                document.getElementById('browseBtn').style.backgroundColor = '#6c757d';
+                
+                updateNavigationButtons();
+                alert(`Base folder configured: ${directoryHandle.name}\n\nExcel files will be organized in subfolders by Alloy Group and Code.`);
+                
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    return; // User cancelled
+                }
+                console.error('Folder selection error:', error);
+                alert('Error selecting folder. Please try again.');
+            }
         }
 
         function updateAlloyCode() {
@@ -326,6 +433,8 @@
                     option.textContent = code;
                     alloyCodeSelect.appendChild(option);
                 });
+                // Enable the select and trigger change to update selected values
+                alloyCodeSelect.disabled = false;
             }
             
             selectedAlloyGroup = alloyGroup;
@@ -490,6 +599,11 @@
             const container = document.getElementById('resultsContainer');
             const results = calculateResults();
             
+            // Auto-save Excel file when results are displayed
+            setTimeout(() => {
+                saveExcelToStructuredFolder();
+            }, 500); // Small delay to ensure UI is rendered first
+            
             let html = `
                 <div class="results-summary">
                     <h3>Input Summary</h3>
@@ -615,7 +729,7 @@
             prevBtn.disabled = currentStep === 1;
             
             if (currentStep === 1) {
-                nextBtn.disabled = !selectedAlloyGroup || !selectedAlloyCode;
+                nextBtn.disabled = !selectedAlloyGroup || !selectedAlloyCode || !isBaseFolderSet;
             } else if (currentStep === 5) {
                 nextBtn.style.display = 'none';
             } else {
@@ -628,6 +742,7 @@
             // Reset all data
             selectedAlloyGroup = "";
             selectedAlloyCode = "";
+            nominalValues = {};
             furnaceAnalysis = {};
             totalWeight = 0;
             recoveryPercentages = {};
@@ -639,6 +754,12 @@
             document.getElementById('alloyCode').disabled = true;
             document.getElementById('totalWeight').value = '';
             
+            // Keep folder handle active - don't reset it
+            // Ensure folder handle stays active
+            if (!baseFolderHandle && window.alloyCalculatorData.folderHandle) {
+                baseFolderHandle = window.alloyCalculatorData.folderHandle;
+            }
+            
             // Reset display
             document.getElementById('selectedGroup').textContent = 'Alloy Group: Not selected';
             document.getElementById('selectedCode').textContent = 'Alloy Code: Not selected';
@@ -647,10 +768,231 @@
             document.getElementById(`step${currentStep}`).classList.remove('active');
             currentStep = 1;
             document.getElementById('step1').classList.add('active');
+            
+            // Re-check folder status to ensure UI is accurate
+            checkBaseFolderStatus();
             updateNavigationButtons();
             
             alert('All inputs have been cleared.');
         }
+
+
+        // Generate Excel workbook (shared function)
+        function generateExcelWorkbook() {
+            // Create workbook
+            const wb = XLSX.utils.book_new();
+                
+                // Create summary sheet
+                const summaryData = [
+                    ['Alloy Nominal Values Calculator Results'],
+                    [''],
+                    ['Alloy Group:', selectedAlloyGroup],
+                    ['Alloy Code:', selectedAlloyCode],
+                    ['Total Weight (lbs):', totalWeight],
+                    [''],
+                    ['Nominal Values'],
+                    ['Element', 'Nominal Value']
+                ];
+                
+                // Add nominal values from predefined data
+                if (selectedAlloyCode && nominalValues[selectedAlloyCode]) {
+                    elements.forEach(element => {
+                        const nominalValue = nominalValues[selectedAlloyCode][element];
+                        summaryData.push([element, nominalValue.toFixed(3)]);
+                    });
+                }
+                
+                summaryData.push(['']);
+                summaryData.push(['Furnace Analysis & Results']);
+                summaryData.push(['Element', 'Furnace Analysis', 'Recovery %', 'Difference', 'Required Weight (LBS)']);
+                
+                // Add furnace analysis and results
+                const results = calculateResults();
+                elements.forEach(element => {
+                    if (furnaceAnalysis[element] || clearedElements[element] || results[element]) {
+                        const recovery = recoveryPercentages[element] || '';
+                        const difference = calculateDifference(element);
+                        let requiredWeight = '';
+                        
+                        if (results[element]) {
+                            requiredWeight = Math.round(results[element]);
+                        } else if (clearedElements[element]) {
+                            requiredWeight = 'No need to add anything';
+                        } else {
+                            requiredWeight = 'No need to add anything';
+                        }
+                        
+                        summaryData.push([
+                            element,
+                            furnaceAnalysis[element] ? furnaceAnalysis[element].toFixed(3) : '',
+                            recovery ? recovery.toFixed(1) + '%' : '',
+                            difference.toFixed(4),
+                            requiredWeight
+                        ]);
+                    }
+                });
+                
+                // Create worksheet
+                const ws = XLSX.utils.aoa_to_sheet(summaryData);
+                
+                // Add worksheet to workbook
+                XLSX.utils.book_append_sheet(wb, ws, 'Alloy Calculator Results');
+                
+                // Generate filename with timestamp
+                const now = new Date();
+                const timestamp = now.toISOString().replace(/[:.]/g, '-').slice(0, 19);
+                const filename = `Alloy_Calculator_Results_${selectedAlloyGroup}_${selectedAlloyCode}_${timestamp}.xlsx`;
+                
+                return { workbook: wb, filename: filename };
+        }
+
+        // Get the active folder handle from any available source
+        function getActiveFolderHandle() {
+            // Try multiple sources in order of preference
+            if (baseFolderHandle) {
+                return baseFolderHandle;
+            }
+            if (window.alloyCalculatorData && window.alloyCalculatorData.folderHandle) {
+                baseFolderHandle = window.alloyCalculatorData.folderHandle;
+                return baseFolderHandle;
+            }
+            if (window.selectedBaseFolderHandle) {
+                baseFolderHandle = window.selectedBaseFolderHandle;
+                return baseFolderHandle;
+            }
+            
+            return null;
+        }
+
+        // Save Excel to structured folder system
+        async function saveExcelToStructuredFolder() {
+            try {
+                // Get the active folder handle
+                const activeHandle = getActiveFolderHandle();
+                
+                if (!activeHandle && isBaseFolderSet) {
+                    // Handle was lost - this shouldn't happen in same session
+                    // For now, just use regular download and inform user
+                    const { workbook, filename } = generateExcelWorkbook();
+                    XLSX.writeFile(workbook, filename);
+                    
+                    // Show a non-intrusive message
+                    const errorMsg = document.createElement('div');
+                    errorMsg.style.cssText = `
+                        position: fixed; top: 20px; right: 20px; 
+                        background-color: #dc3545; color: white; 
+                        padding: 15px 20px; border-radius: 8px; 
+                        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+                        z-index: 1000; font-weight: 600;
+                    `;
+                    errorMsg.innerHTML = `
+                        ⚠️ Folder access lost<br>
+                        <small>File saved to Downloads instead</small>
+                    `;
+                    document.body.appendChild(errorMsg);
+                    setTimeout(() => errorMsg.remove(), 3000);
+                    return;
+                } else if (!activeHandle && !isBaseFolderSet) {
+                    // No folder configured at all
+                    const { workbook, filename } = generateExcelWorkbook();
+                    XLSX.writeFile(workbook, filename);
+                    
+                    const infoMsg = document.createElement('div');
+                    infoMsg.style.cssText = `
+                        position: fixed; top: 20px; right: 20px; 
+                        background-color: #007acc; color: white; 
+                        padding: 15px 20px; border-radius: 8px; 
+                        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+                        z-index: 1000; font-weight: 600;
+                    `;
+                    infoMsg.innerHTML = `
+                        📁 File saved to Downloads<br>
+                        <small>Select base folder in Step 1 for custom location</small>
+                    `;
+                    document.body.appendChild(infoMsg);
+                    setTimeout(() => infoMsg.remove(), 4000);
+                    return;
+                }
+                
+                // Use the active handle
+                baseFolderHandle = activeHandle;
+
+                // Generate the Excel file
+                const { workbook, filename } = generateExcelWorkbook();
+                
+                // Create folder structure: Base → Alloy Group → Alloy Code
+                let alloyGroupFolder;
+                try {
+                    alloyGroupFolder = await baseFolderHandle.getDirectoryHandle(selectedAlloyGroup, { create: true });
+                } catch (error) {
+                    console.error('Error creating alloy group folder:', error);
+                    throw new Error(`Could not create folder for alloy group: ${selectedAlloyGroup}`);
+                }
+                
+                let alloyCodeFolder;
+                try {
+                    alloyCodeFolder = await alloyGroupFolder.getDirectoryHandle(selectedAlloyCode, { create: true });
+                } catch (error) {
+                    console.error('Error creating alloy code folder:', error);
+                    throw new Error(`Could not create folder for alloy code: ${selectedAlloyCode}`);
+                }
+                
+                // Convert workbook to buffer
+                const buffer = XLSX.write(workbook, { type: 'array', bookType: 'xlsx' });
+                
+                // Save file in the structured folder
+                const fileHandle = await alloyCodeFolder.getFileHandle(filename, { create: true });
+                const writable = await fileHandle.createWritable();
+                await writable.write(buffer);
+                await writable.close();
+                
+                const baseFolderName = localStorage.getItem('alloyCalculatorBaseFolder') || 'Selected folder';
+                // Show success message in a less intrusive way
+                const successMsg = document.createElement('div');
+                successMsg.style.cssText = `
+                    position: fixed; top: 20px; right: 20px; 
+                    background-color: #28a745; color: white; 
+                    padding: 15px 20px; border-radius: 8px; 
+                    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+                    z-index: 1000; font-weight: 600;
+                    animation: slideIn 0.3s ease-out;
+                `;
+                successMsg.innerHTML = `
+                    ✅ Excel file saved automatically!<br>
+                    <small style="opacity: 0.9;">📁 ${baseFolderName}/${selectedAlloyGroup}/${selectedAlloyCode}/</small>
+                `;
+                
+                // Add CSS animation
+                if (!document.getElementById('slideInStyle')) {
+                    const style = document.createElement('style');
+                    style.id = 'slideInStyle';
+                    style.textContent = `
+                        @keyframes slideIn {
+                            from { transform: translateX(100%); opacity: 0; }
+                            to { transform: translateX(0); opacity: 1; }
+                        }
+                    `;
+                    document.head.appendChild(style);
+                }
+                
+                document.body.appendChild(successMsg);
+                
+                // Remove message after 4 seconds
+                setTimeout(() => {
+                    if (successMsg.parentNode) {
+                        successMsg.remove();
+                    }
+                }, 4000);
+                
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    return; // User cancelled
+                }
+                console.error('Save error:', error);
+                alert('Error saving Excel file. Please ensure you have write permissions to the selected folder.');
+            }
+        }
+
 
         // Initialize the application
         init();
